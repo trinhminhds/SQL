@@ -1436,3 +1436,10 @@ FROM DBO.Orders AS O
 INNER JOIN DBO.Customers AS C
 ON C.CustomerID = O.CustomerID
 ORDER BY TONG DESC;
+
+
+
+
+
+SELECT CategoryID
+FROM dbo.Categories;
