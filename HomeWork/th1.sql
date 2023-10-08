@@ -10,7 +10,7 @@ CREATE TABLE KHANHHANG(
     SODT CHAR(10),
     NGSINH DATE,
     DOANHSO INT,
-    NGDK DATE,
+    NGDK DATE , 
     PRIMARY KEY (MAKH)
 );
 
@@ -63,8 +63,8 @@ VALUES
 	('BB01', 'Bút bi','cây','Việt Nam',5000),
 	('BB02', 'Bút bi','cây','Trung Quốc', 7000),
 	('BB03', 'Bút bi','hộp','Thái Lan',100000),
-	('TV01', 'Tập 100 giấy mỏng','quyển', 'TrungQuốc', 2500),
-	('TV02', 'Tập 200 giấy mỏng', 'quyển', 'TrungQuốc', 4500),
+	('TV01', 'Tập 100 giấy mỏng','quyển', 'Trung Quốc', 2500),
+	('TV02', 'Tập 200 giấy mỏng', 'quyển', 'Trung Quốc', 4500),
 	('TV03', 'Tập 100 giấy tốt','quyển', 'Việt Nam', 3000),
 	('TV04', 'Tập 200 giấy tốt','quyển', 'Việt Nam',5500),
 	('TV05', 'Tập 100 trang','chục','Việt Nam', 23000),
@@ -118,12 +118,18 @@ VALUES
 	('1022', '2023-01-16', NULL, 'NV03', 7000),
 	('1023', '2023-01-17', NULL, 'NV01', 330000);
 
+ALTER TABLE th1quanlybanhang.hoadon
+ADD CONSTRAINT FK_KHACHHANG_HOADON 
+FOREIGN KEY(MAKH) REFERENCES KHACHHANG(MAKH),
+ADD CONSTRAINT FK_NHANVIEN_HOADON 
+FOREIGN KEY(MANV) REFERENCES NHANVIEN(MANV);
 
 CREATE TABLE CTHD(
 	SOHD VARCHAR(5) NOT NULL,
     MASP VARCHAR(5) NOT NULL,
     SL TINYINT,
     PRIMARY KEY (SOHD,MASP)
+    
 );
 INSERT INTO CTHD
 VALUES 
@@ -176,7 +182,11 @@ VALUES
  ('1023', 'ST04', 6),
  ('1023', 'BC03', 10);
 
-
+ALTER TABLE th1quanlybanhang.cthd
+ADD CONSTRAINT FK_SANPHAM_CTHD 
+FOREIGN KEY (MASP) REFERENCES SANPHAM(MASP),
+ADD CONSTRAINT FK_SANPHAM_HOADON 
+FOREIGN KEY (SOHD) REFERENCES HOADON(SOHD);
 
 
 -- I. Ngôn ngữ định nghĩa dữ liệu (Data Definition Language):
@@ -211,7 +221,7 @@ ADD CONSTRAINT CHK_GIA CHECK (GIA >= 500);
 
 -- 9
 -- ALTER TABLE SANPHAM
--- ADD CONSTRAINT CHK_MAKH CHECK (MAKH >= 1 );
+-- ADD CONSTRAINT CHK_MAKH CHECK ( > 1 );
 
 
 
@@ -251,15 +261,287 @@ UPDATE th1quanlybanhang.sanpham_copy
 SET GIA = GIA * (1 + 5 / 100)
 WHERE NUOCSX = 'Thái Lan';
 
+-- 4
 UPDATE th1quanlybanhang.sanpham_copy
 SET GIA = GIA / (1 + 5 /100)
 WHERE (NUOCSX = 'TRUNG QUỐC' AND GIA <= 10000);
 
-
-
+-- 5
 UPDATE th1quanlybanhang.khachhang_copy
 SET LOAIKH = 'Vip'
 WHERE  (NGDK < '2023-01-01' AND DOANHSO > 10000000) OR (NGDK > '2023-01-01' AND DOANHSO > 2000000);
+
+
+-- 6
+ALTER TABLE th1quanlybanhang.khachhang_copy
+ADD CONSTRAINT CHK_KHACHHANG CHECK(NGDK > NGSINH);
+
+-- 7
+
+
+
+
+
+
+
+--  III. Ngôn ngữ truy vấn dữ liệu:
+-- 1
+select MASP,TENSP
+from th1quanlybanhang.sanpham
+WHERE NUOCSX = 'trung quoc';	
+
+-- 2
+SELECT MASP, TENSP
+FROM th1quanlybanhang.sanpham
+WHERE DVT IN ('cay' AND 'quyen');
+
+
+-- 3
+SELECT MASP,TENSP
+FROM th1quanlybanhang.sanpham
+WHERE NUOCSX = 'TRUNG QUOC' AND GIA BETWEEN 30000 AND 40000;
+
+-- 4
+SELECT MASP,TENSP,NUOCSX
+FROM th1quanlybanhang.sanpham
+WHERE NUOCSX IN ('TRUNG QUOC','THAI LAN') AND GIA BETWEEN 30000 AND 40000;
+
+-- 5
+SELECT *
+FROM th1quanlybanhang.sanpham
+WHERE MASP LIKE 'B%01';
+
+
+-- 6
+SELECT SOHD,TRIGIA,NGHD
+FROM th1quanlybanhang.hoadon
+WHERE NGHD IN ('2023-01-01' , '2023-01-02');
+
+
+-- 7
+SELECT SOHD,TRIGIA,NGHD
+FROM th1quanlybanhang.hoadon
+WHERE NGHD BETWEEN'2023-01-01' AND '2023-01-31'
+ORDER BY NGHD ASC, TRIGIA DESC;
+
+
+-- 8
+SELECT KH.MAKH,KH.HOTEN,HD.NGHD
+FROM th1quanlybanhang.khachhang AS KH , th1quanlybanhang.hoadon AS HD
+WHERE HD.NGHD = '2023-01-01' AND KH.MAKH = HD.MAKH;
+
+
+-- 9
+SELECT HD.SOHD,HD.TRIGIA,NV.HOTEN
+FROM th1quanlybanhang.hoadon AS HD, th1quanlybanhang.nhanvien AS NV
+WHERE NV.HOTEN = 'Bui Thi NGOC HAN' AND HD.MANV = NV.MANV;
+
+-- 10
+SELECT SP.MASP,SP.TENSP,HD.NGHD
+FROM th1quanlybanhang.SANPHAM AS SP 
+INNER JOIN th1quanlybanhang.cthd   
+ON SP.MASP = CTHD.MASP 
+INNER JOIN th1quanlybanhang.HOADON AS HD
+ON CTHD.SOHD = HD.SOHD
+INNER JOIN th1quanlybanhang.KHACHHANG AS KH
+ON  HD.MAKH = KH.MAKH 
+WHERE KH.HOTEN = 'nguyen thanh nam' AND MONTH(HD.NGHD ) = 10 AND year(HD.NGHD ) = 2022;
+
+
+
+-- 11
+SELECT HD.SOHD,cthd.MASP,HD.NGHD
+FROM th1quanlybanhang.hoadon AS HD
+INNER JOIN th1quanlybanhang.cthd
+ON HD.SOHD = cthd.SOHD
+WHERE cthd.MASP IN ('BB01','BB02');
+
+-- 12
+SELECT HD.SOHD,cthd.MASP,HD.NGHD,cthd.SL
+FROM th1quanlybanhang.hoadon AS HD
+INNER JOIN th1quanlybanhang.cthd
+ON HD.SOHD = cthd.SOHD
+WHERE cthd.MASP IN ('BB01','BB02') AND cthd.SL BETWEEN 10 AND 20;
+
+
+-- 13
+SELECT HD.SOHD
+FROM th1quanlybanhang.hoadon AS HD
+INNER JOIN th1quanlybanhang.cthd ON HD.SOHD = cthd.SOHD
+WHERE cthd.MASP IN ('BB01','BB02') AND cthd.SL BETWEEN 10 AND 20
+GROUP BY HD.SOHD
+HAVING COUNT(HD.SOHD) = 2;
+
+
+-- 14
+SELECT SP.MASP,SP.TENSP,SP.NUOCSX,HD.NGHD
+FROM th1quanlybanhang.sanpham_COPY AS SP 
+INNER JOIN th1quanlybanhang.cthd 
+ON SP.MASP = cthd.MASP
+INNER JOIN th1quanlybanhang.hoadon AS HD
+ON cthd.SOHD = HD.SOHD
+WHERE SP.NUOCSX = 'TRUNG QUOC' OR HD.NGHD = '2023-01-01';
+
+
+-- 15
+SELECT SP.MASP,SP.TENSP
+FROM th1quanlybanhang.sanpham_COPY AS SP 
+LEFT JOIN th1quanlybanhang.cthd 
+ON SP.MASP = cthd.MASP
+WHERE cthd.MASP IS NULL;
+
+-- 16
+SELECT SP.MASP,SP.TENSP
+FROM th1quanlybanhang.sanpham_COPY AS SP
+WHERE SP.MASP NOT IN ( 
+		SELECT C.MASP
+        FROM th1quanlybanhang.CTHD AS C
+        INNER JOIN th1quanlybanhang.HOADON AS H
+        ON C.SOHD = H.SOHD
+        WHERE year(H.NGHD) = 2022
+);
+
+-- 17
+SELECT SP.MASP,SP.TENSP
+FROM th1quanlybanhang.sanpham_COPY AS SP
+WHERE SP.NUOCSX = 'TRUNG QUỐC' AND SP.MASP NOT IN ( 
+		SELECT C.MASP
+        FROM th1quanlybanhang.CTHD AS C
+        INNER JOIN th1quanlybanhang.HOADON AS H
+        ON C.SOHD = H.SOHD
+        WHERE year(H.NGHD) = 2022
+);
+
+
+
+-- 18
+SELECT SOHD
+FROM th1quanlybanhang.HOADON
+WHERE NOT EXISTS(
+	SELECT * 
+    FROM th1quanlybanhang.SANPHAM
+	WHERE NUOCSX = 'Singapore' AND MASP NOT IN (
+		SELECT MASP 
+		FROM th1quanlybanhang.cthd
+		WHERE SOHD = HOADON.SOHD AND CTHD.MASP = SANPHAM.MASP ));
+
+
+
+-- 19
+SELECT H.SOHD
+FROM th1quanlybanhang.HOADON AS H
+WHERE YEAR(H.NGHD) = 2022 AND NOT EXISTS(
+	SELECT * 
+    FROM th1quanlybanhang.SANPHAM AS S
+	WHERE S.NUOCSX = 'SINGAPORE' AND NOT EXISTS(
+		SELECT * 
+		FROM th1quanlybanhang.cthd AS C
+        WHERE C.SOHD = H.SOHD AND C.MASP = S.MASP));
+
+
+-- 20
+
+SELECT COUNT(*) AS SOLUONG
+FROM th1quanlybanhang.hoadon AS HD
+WHERE HD.MAKH NOT IN (
+	SELECT KH.MAKH
+    FROM th1quanlybanhang.khachhang_copy AS KH
+    WHERE HD.MAKH = KH.MAKH );
+    
+
+
+-- 21
+SELECT COUNT(DISTINCT C.MASP) AS SOLUONG
+FROM th1quanlybanhang.cthd AS C
+WHERE C.SOHD IN ( 
+	SELECT H.SOHD 
+	FROM th1quanlybanhang.hoadon AS H
+	WHERE YEAR(H.NGHD) = 2022 AND C.SOHD = H.SOHD ); 
+
+
+-- 22
+SELECT MAX(h.TRIGIA) as CAO , MIN(h.TRIGIA) as THAP
+FROM th1quanlybanhang.hoadon as h;
+
+
+-- 23
+SELECT AVG(H.TRIGIA) AS TRUNGBINH
+FROM th1quanlybanhang.hoadon AS H
+WHERE YEAR(H.NGHD) = 2022;
+
+
+-- 24
+SELECT SUM(K.DOANHSO) AS DT2022
+FROM th1quanlybanhang.khachhang_copy AS K
+INNER JOIN th1quanlybanhang.HOADON AS H
+ON K.MAKH = H.MAKH
+WHERE year(H.NGHD) = 2022;
+
+
+-- 25
+SELECT H.SOHD
+FROM th1quanlybanhang.hoadon AS H
+WHERE YEAR(H.NGHD) = 2022
+GROUP BY H.SOHD
+ORDER BY MAX(H.TRIGIA) DESC
+LIMIT 1 ;
+
+
+-- 26
+SELECT K.HOTEN
+FROM th1quanlybanhang.KHACHHANG AS K
+INNER JOIN th1quanlybanhang.HOADON AS H
+ON K.MAKH = H.MAKH AND H.SOHD = (
+	SELECT HD.SOHD
+	FROM th1quanlybanhang.HOADON AS HD
+	WHERE year(HD.NGHD) = 2022 AND HD.TRIGIA = (
+		SELECT MAX(HOADON.TRIGIA)
+		FROM th1quanlybanhang.HOADON));
+        
+        
+-- 27
+SELECT K.MAKH,K.HOTEN
+FROM th1quanlybanhang.khachhang_copy AS K
+ORDER BY K.DOANHSO DESC
+LIMIT 3;
+        
+        
+-- 28
+SELECT S.MASP,S.TENSP
+FROM th1quanlybanhang.sanpham_copy AS S
+INNER JOIN (
+	SELECT DISTINCT SP.GIA
+    FROM th1quanlybanhang.sanpham_copy AS SP
+	ORDER BY SP.GIA DESC
+    LIMIT 3 ) AS T 
+ON T.GIA = S.GIA
+ORDER BY T.GIA DESC;
+
+
+-- 29
+SELECT S.MASP,S.TENSP
+FROM th1quanlybanhang.sanpham_copy AS S
+INNER JOIN (
+	SELECT DISTINCT SP.GIA
+    FROM th1quanlybanhang.sanpham_copy AS SP
+    WHERE SP.NUOCSX = 'THAI LAN'
+    ORDER BY SP.GIA DESC
+    LIMIT 3 ) AS T 
+ON T.GIA = S.GIA
+ORDER BY T.GIA DESC;
+
+-- 30
+SELECT S.MASP,S.TENSP
+FROM th1quanlybanhang.sanpham_copy AS S
+INNER JOIN (
+	SELECT DISTINCT SP.GIA
+    FROM th1quanlybanhang.sanpham_copy AS SP
+    WHERE SP.NUOCSX = 'TRUNG QUOC'
+    ORDER BY SP.GIA DESC
+    LIMIT 3 ) AS T 
+ON T.GIA = S.GIA
+ORDER BY T.GIA DESC;
+
 
 
 
