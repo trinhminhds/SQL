@@ -1,5 +1,5 @@
 DROP DATABASE IF EXISTS QUANLYTHITUYENSINH;
-CREATE DATABASE QUANLYTHITUYENSINH;
+CREATE DATABASE TH5HWQUANLYTHITUYENSINH;
 
 USE QUANLYTHITUYENSINH;
 
@@ -65,8 +65,119 @@ INSERT INTO KETQUA VALUES ('120006','TOANCH',4);
 INSERT INTO KETQUA VALUES ('120006','VAN',5);
 
 
+ 
+
+-- 1
+SELECT DISTINCT T.*
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD
+WHERE K.DIEM >= 8 ;
 
 
-# ...
+
+-- 2
+SELECT T.*,K.DIEM
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD 
+WHERE K.MON IN ('TOANCH','VANCH');
+
+
+-- 3
+
+SELECT DISTINCT T.*
+FROM quanlythituyensinh.thisinh AS T,quanlythituyensinh.ketqua AS K
+WHERE K.MON IN ('TOANCH','VANCH') AND K.DIEM <= 5 OR 
+K.MON IN ('TOAN','VAN','TIN') AND K.DIEM <= 2 
+AND K.SOBD = T.SOBD;
+
+
+-- 4
+SELECT T.SOBD, T.HOTEN
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD 
+WHERE K.DIEM = 0 AND K.MON IN ('VAN','TOAN','TIN')
+GROUP BY T.SOBD, T.HOTEN
+HAVING COUNT(K.MON) >= 2;
+
+
+
+-- 5
+SELECT T.*
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD 
+WHERE K.MON IN ('TOANCH','VANCH') AND K.DIEM = 10;
+
+
+
+-- 6
+
+SELECT * 
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD 
+WHERE K.MON IN ('TOANCH','VANCH')
+ORDER BY K.DIEM DESC 
+LIMIT 1;
+
+
+-- 7
+SELECT T.HOTEN,SUM(K.DIEM)
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD
+INNER JOIN quanlythituyensinh.monthi AS M
+ON K.MON = M.MON
+GROUP BY T.HOTEN 
+ORDER BY SUM(K.DIEM) DESC 
+LIMIT 1;
+
+
+-- 8
+SELECT T.*,K.DIEM
+FROM quanlythituyensinh.thisinh AS T
+INNER JOIN quanlythituyensinh.ketqua AS K
+ON T.SOBD = K.SOBD
+WHERE K.DIEM < 5;
+
+
+
+-- 9
+SELECT DISTINCT T.*
+FROM quanlythituyensinh.thisinh AS T,quanlythituyensinh.ketqua AS K
+WHERE K.MON IN ('TOANCH','VANCH') AND K.DIEM <= 5 AND 
+K.MON IN ('TOAN','VAN','TIN') AND K.DIEM <= 2 
+AND K.SOBD = T.SOBD;
+
+
+-- 10
+
+
+SELECT T.SOBD,T.HOTEN
+FROM quanlythituyensinh.thisinh AS T
+JOIN quanlythituyensinh.ketqua AS K1 
+ON K1.SOBD = T.SOBD 
+JOIN quanlythituyensinh.ketqua AS K2 
+ON K2.SOBD = T.SOBD
+INNER JOIN quanlythituyensinh.ketqua AS K3
+ON K3.SOBD = T.SOBD 
+WHERE (K1.MON IN ('TOANCH','VANCH') AND K1.DIEM >= 5)
+AND (K2.MON IN ('TOAN','VAN','TIN') AND K2.DIEM >= 2)
+AND ((K1.DIEM * 2) + (K2.DIEM)) >= 20
+AND K3.SOBD = K1.SOBD AND K3.SOBD = K2.SOBD AND K3.SOBD = T.SOBD 
+GROUP BY T.SOBD,T.HOTEN;
+
+
+
+
+
+
+
+
+
+
 
 
