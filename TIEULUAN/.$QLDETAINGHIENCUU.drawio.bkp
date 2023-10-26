@@ -1,0 +1,46 @@
+<mxfile host="Electron" modified="2023-10-23T06:27:18.449Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/22.0.2 Chrome/114.0.5735.289 Electron/25.8.4 Safari/537.36" etag="R3muNSX62lvut0Coh4oE" version="22.0.2" type="device">
+  <diagram name="Page-1" id="-4eLiCZreyF3rMpUVQOR">
+    <mxGraphModel dx="1050" dy="621" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Mia9fNSxajARVFUBqXhb-1" value="GIAOVIEN&lt;br&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-3" value="" style="shape=partialRectangle;whiteSpace=wrap;html=1;bottom=1;right=1;left=1;top=0;fillColor=none;routingCenterX=-0.5;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="85" y="115" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-5" value="&lt;ul&gt;&lt;li&gt;MAGIAOVIEN&lt;/li&gt;&lt;li&gt;HOTEN&lt;/li&gt;&lt;li&gt;ĐIACHI&lt;/li&gt;&lt;li&gt;SDT&lt;/li&gt;&lt;li&gt;NGAYSINH&lt;/li&gt;&lt;li&gt;LUONG&lt;/li&gt;&lt;li&gt;PHAI&lt;/li&gt;&lt;li&gt;MABOMON&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="130" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-6" value="BOMON" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="90" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-7" value="" style="shape=partialRectangle;whiteSpace=wrap;html=1;bottom=1;right=1;left=1;top=0;fillColor=none;routingCenterX=-0.5;rotation=90;" vertex="1" parent="1">
+          <mxGeometry x="668.75" y="81.25" width="112.5" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-8" value="&lt;ul&gt;&lt;li&gt;MABOMON&lt;/li&gt;&lt;li&gt;TENBOMON&lt;/li&gt;&lt;li&gt;PHONGBOMON&lt;/li&gt;&lt;li&gt;SDT&lt;/li&gt;&lt;li&gt;TRUONGBOMON&lt;/li&gt;&lt;li&gt;NGAYNHANCHUCTRBOMON&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="700" y="45" width="220" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-9" value="KHOA" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="345" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-10" value="" style="shape=partialRectangle;whiteSpace=wrap;html=1;bottom=1;right=1;left=1;top=0;fillColor=none;routingCenterX=-0.5;rotation=-90;" vertex="1" parent="1">
+          <mxGeometry x="140" y="340" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-11" value="&lt;ul&gt;&lt;li&gt;MAKHOA&lt;/li&gt;&lt;li&gt;TENKHOA&lt;/li&gt;&lt;li&gt;NAMTHANHLAP&lt;/li&gt;&lt;li&gt;PHONGLAMVIEC&lt;/li&gt;&lt;li&gt;SDT&lt;/li&gt;&lt;li&gt;MGVTRKHOA&lt;/li&gt;&lt;li&gt;NGAYNHANCHUC&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="80" y="305" width="160" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-12" value="DETAI" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="595" y="335" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-13" value="" style="shape=partialRectangle;whiteSpace=wrap;html=1;bottom=1;right=1;left=1;top=0;fillColor=none;routingCenterX=-0.5;rotation=90;" vertex="1" parent="1">
+          <mxGeometry x="668.75" y="335" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Mia9fNSxajARVFUBqXhb-14" value="&lt;ul&gt;&lt;li&gt;MADETAI&lt;/li&gt;&lt;li&gt;TENDETAI&lt;/li&gt;&lt;li&gt;PHONGBOMON&lt;/li&gt;&lt;li&gt;SDT&lt;/li&gt;&lt;li&gt;TRUONGBOMON&lt;/li&gt;&lt;li&gt;NGAYNHANCHUCTRBOMON&lt;/li&gt;&lt;/ul&gt;" style="text;strokeColor=none;fillColor=none;html=1;whiteSpace=wrap;verticalAlign=middle;overflow=hidden;" vertex="1" parent="1">
+          <mxGeometry x="710" y="300" width="220" height="130" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
