@@ -1,4 +1,4 @@
-DROP DATABASE IF EXISTS quanlysinhvien;
+DROP DATABASE IF EXISTS Quanlysinhvien;
 CREATE DATABASE IF NOT EXISTS QuanLySinhVien;
 	-- character set "minh17"
     -- collate "minh17_trinh"
