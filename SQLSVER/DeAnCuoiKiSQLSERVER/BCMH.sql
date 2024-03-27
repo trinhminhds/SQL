@@ -265,6 +265,7 @@ WHERE MAKV = (
     ORDER BY COUNT(*) DESC 
 )
 
+
 -- 12. Giảm 20% giá các thức uống không bán được trong tháng 1/2024. 
 
 SELECT T.MATU
@@ -311,32 +312,28 @@ WHERE MANV = '8003' AND NGAYLAP = '2023-09-21'
 
 
 -- 16. Xuất ra danh sách các thức uống có loại là Tea (mã: tea) 
-
 SELECT *
 FROM thucuong 
 WHERE MALOAI = 'TRA'
 
 
 -- 17. Xuất ra danh sách thức uống không chứa nguyên liệu sữa đặc
-
-SELECT thucuong.MATU
+SELECT thucuong.MATU,nguyenlieu.TENNL
 FROM thucuong
-JOIN congthuc 
+LEFT JOIN congthuc 
 ON thucuong.MATU = congthuc.MATU
-JOIN nguyenlieu
+LEFT JOIN nguyenlieu
 ON congthuc.MANL = nguyenlieu.MANL
-WHERE nguyenlieu.TENNL NOT LIKE 'Sữa%'
+WHERE nguyenlieu.TENNL <> N'Sữa đặc'
 
 
 -- 18. Xuất ra danh sách những loại thức uống có giá thấp hơn 50 ngàn. 
-
 SELECT *
 FROM thucuong
 WHERE DONGIA < 50000
 
 
 -- 19. Hãy lọc ra những nguyên liệu được cung cấp bởi nhà cung cấp NCC1.
-
 SELECT nguyenlieu.MANL
 FROM nguyenlieu 
 JOIN chitiet_phieunhap AS P
@@ -349,7 +346,6 @@ WHERE C.MANCC = 'C1'
 
 
 -- 20. Viết câu lệnh thống kê toàn bộ những nhà cung cấp đang cấp hàng cho hệ thống. 
-
 SELECT nhacungcap.*
 FROM nhacungcap
 JOIN phieunhap 
@@ -422,7 +418,6 @@ LEFT JOIN nhanvien ON hoadon.MANV = nhanvien.MANV
 LEFT JOIN phieuphuthu ON nhanvien.MANV = phieuphuthu.MANV
 WHERE YEAR(hoadon.NGAYLAP) = 2024 OR YEAR(phieuphuthu.NGAYLAP) = 2024 
 AND MONTH(hoadon.NGAYLAP) IN (1,2,3) OR MONTH(phieuphuthu.NGAYLAP) IN (1,2,3)
-
 
 
 -- 28. Tính lợi nhuận toàn hệ thống năm 2023
@@ -943,6 +938,7 @@ GO
 -- 49. Viết thủ tục tính tổng chi tiêu của hệ thống trong khoảng thời gian bất kì. Với tham 
 -- số đầu vào là thời gian bắt đầu, thời gian kết thúc. Tham sô đầu ra là tổng tiền chi 
 -- của hệ thống (tổng chi= tổng tiền phiếu nhập + tổng tiền phiếu chi).
+
 CREATE PROCEDURE sp_tongChiTieu(@tgbatdau date, @tgketthuc date)
 AS
 BEGIN
@@ -957,9 +953,11 @@ BEGIN
 END
 GO
 
+
 -- 50. Viết một thủ tục với tùy chọn ‘with encryption’, mã hóa không cho người dùng xem 
 -- được nội dung của thủ tục. 
 -- ĐÃ CHẠY
+
 CREATE PROCEDURE sp_maHoa_nguoiDung
 WITH ENCRYPTION
 AS
@@ -967,6 +965,7 @@ BEGIN
     PRINT N'Mã hóa không cho người dùng xem được nội dung của thủ tục';
 END
 GO
+
 
 
 -- 51. Viết Trigger bắt lỗi cho lệnh Insert vào bảng CHITIET_HOADON. Khi thêm chi 
@@ -1129,4 +1128,442 @@ BEGIN
     ON NL.MANL = I.MANL
 
 END
+GO
 
+-- 55. Viết Trigger bắt lỗi cho lệnh Update vào bảng CHITIET_PHIEUNHAP. Khi sửa số 
+-- lượng nguyên liệu trong chi tiết phiếu nhập thì: không được sửa số âm, phải sửa số 
+-- lượng tồn của nguyên liệu. 
+
+CREATE TRIGGER trg_sua_CHITIET_PHIEUNHAP
+ON CHITIET_PHIEUNHAP 
+FOR UPDATE AS
+BEGIN
+
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE inserted.SOLUONG <= 0
+    )
+    BEGIN 
+        PRINT N'Số lượng không được nhập số âm'
+        ROLLBACK TRANSACTION 
+        RETURN
+    END
+
+    UPDATE NL
+    SET NL.SOLUONG = NL.SOLUONG + (I.SOLUONG - D.SOLUONG)
+    FROM nguyenlieu AS NL
+    JOIN inserted AS I 
+    ON NL.MANL = I.MANL
+    JOIN deleted AS D
+    ON NL.MANL = D.MANL
+
+
+END
+GO
+
+
+-- 56. Viết Trigger bắt lỗi cho lệnh Delete vào bảng CHITIET_PHIEUNHAP. Khi xóa chi 
+-- tiết nhập thì phải giảm số lượng tồn của nguyên liệu, kiểm tra chi tiết phiếu nhập của 
+-- Mã phiếu nhập vừa xóa còn trong bảng chi tiết phiếu nhập hay không, nếu không thì 
+-- xóa phiếu nhập đó bên bảng PHIEUNHAP.
+
+CREATE TRIGGER trg_xoa_CHITIET_PHIEUNHAP
+ON CHITIET_PHIEUNHAP 
+FOR UPDATE AS
+BEGIN
+
+    UPDATE NL
+    SET NL.SOLUONG = NL.SOLUONG - D.SOLUONG
+    FROM nguyenlieu AS NL
+    JOIN deleted AS D
+    ON NL.MANL = D.MANL
+
+    IF NOT EXISTS(
+        SELECT *
+        FROM chitiet_phieunhap 
+        WHERE MAPN IN (
+            SELECT MAPN
+            FROM deleted
+        )
+    )
+    BEGIN
+        DELETE FROM phieunhap WHERE MAPN IN(
+            SELECT MAPN
+            FROM deleted
+        )
+        PRINT N'Xóa thành công'
+    END
+
+
+END
+GO
+
+
+
+-- 57. Viết Trigger cho lệnh Delete của bảng NHANVIEN. Khi xóa nhân viên thì tự động 
+-- xóa các bảng có liên quan ( chỉ xóa nhân viên đã nghĩ hơn 12 tháng).
+
+CREATE TRIGGER trg_xoa_NhanVien
+ON nhanvien 
+FOR DELETE AS
+BEGIN
+
+    -- Xóa những báo cáo của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM BAOCAO WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted 
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+    -- Xóa những phiếu phụ thu của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM PHIEUPHUTHU WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+    -- Xóa những phiếu chi của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM PHIEUCHI WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted 
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+    -- Xóa những hóa đơn của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM HOADON WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted 
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+    -- Xóa những chi tiết hóa đơn của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM CHITIET_HOADON WHERE MAHD IN (
+        SELECT MAHD 
+        FROM HOADON 
+        WHERE MANV IN (
+            SELECT MANV 
+            FROM deleted 
+            WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+        )
+    )
+
+    -- Xóa những chi tiết phiếu nhập của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM CHITIET_PHIEUNHAP WHERE MAPN IN (
+        SELECT MAPN 
+        FROM PHIEUNHAP 
+        WHERE MANV IN (
+            SELECT MANV 
+            FROM deleted 
+            WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+        )
+    )
+
+    -- Xóa những phiếu nhập của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM PHIEUNHAP WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted 
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+    -- Xóa những chi nhánh của nhân viên đã nghỉ hơn 12 tháng
+    DELETE FROM CHINHANH WHERE MACN IN (
+        SELECT MACN 
+        FROM NHANVIEN 
+        WHERE MANV IN (
+            SELECT MANV 
+            FROM deleted 
+            WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+        )
+    )
+
+    -- Xóa những bản ghi của nhân viên đã nghỉ hơn 12 tháng trong bảng NHANVIEN
+    DELETE FROM NHANVIEN WHERE MANV IN (
+        SELECT MANV 
+        FROM deleted 
+        WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
+    )
+
+
+END
+GO
+
+
+-- 58. Viết Trigger bắt lỗi tuổi nhân viên khi Insert và khi Update bảng NHANVIEN. Điều 
+-- kiện nhân viên phải trên 18 tuổi. 
+
+CREATE TRIGGER trg_them_NhanVien_tren18
+ON nhanvien 
+FOR INSERT,UPDATE AS
+BEGIN
+
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE YEAR(inserted.NGAYSINH) - YEAR(GETDATE()) < 18
+    )
+    BEGIN 
+        PRINT N'Tuổi nhân viên phải lớn hơn 18'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+
+
+END
+GO
+
+
+
+-- 59. Viết Trigger bắt lỗi dữ liệu không âm cho các trường số lượng , tổng tiền,.. (kiểu số) 
+-- có các bảng dữ liệu.
+
+CREATE TRIGGER trg_duLieuKhongAm_phieuChi
+ON phieuchi
+FOR INSERT AS 
+BEGIN 
+
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(TONGTIEN AS DECIMAL(18, 0)) < 0
+    )
+    BEGIN
+        PRINT N'Tổng tiền không được là số âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_chiNhanh
+ON chinhanh
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted 
+        WHERE CAST(HESOGIA AS DECIMAL(18, 0)) < 0
+    )  
+    BEGIN 
+        PRINT N'Hệ số giá không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+
+END 
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_phieuPhuThu
+ON phieuphuthu
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.SOTIEN AS DECIMAL(18,0)) < 0
+    )
+    BEGIN
+        PRINT N'Số Tiền không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_phieuNhap
+ON PHIEUNHAP
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.TONGTIEN AS DECIMAL(18,0)) < 0
+    )
+    BEGIN
+        PRINT N'Số tiền không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_nguyenLieu
+ON NGUYENLIEU
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.SOLUONG AS FLOAT) < 0 
+    )
+    BEGIN
+        PRINT N'Số lượng không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+
+CREATE TRIGGER trg_duLieuKhongAm_congThuc
+ON CONGTHUC
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.SOLUONG AS FLOAT) < 0
+    )
+    BEGIN
+        PRINT N'Số lượng không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_hoaDon 
+ON HOADON
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.TONGTIEN AS DECIMAL(18,0)) < 0
+    )
+    BEGIN
+        PRINT N'Tổng tiền không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+
+CREATE TRIGGER trg_duLieuKhongAm_khuVuc
+ON khuvuc
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.HESOGIA AS FLOAT) < 0
+    )
+    BEGIN
+        PRINT N'Hệ số giá không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_chiTiet_PhieuNhap
+ON chitiet_phieunhap
+FOR INSERT AS
+BEGIN 
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.SOLUONG AS FLOAT) < 0 
+    )
+    BEGIN
+        PRINT N'Số lượng không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_duLieuKhongAm_chiTietHoaDon
+ON chitiet_hoadon
+FOR INSERT AS
+BEGIN   
+    IF EXISTS(
+        SELECT *
+        FROM inserted
+        WHERE CAST(inserted.SOLUONG AS FLOAT) < 0
+    )
+    BEGIN
+        PRINT N'Số lượng không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+CREATE TRIGGER trg_dieuLieuKhongAm_thucUong
+ON thucuong
+FOR INSERT AS
+BEGIN
+    IF EXISTS(
+        SELECT *
+        FROM inserted 
+        WHERE CAST(inserted.DONGIA AS FLOAT) < 0
+    )
+    BEGIN
+        PRINT N'Đơn giá không được âm'
+        ROLLBACK TRANSACTION
+        RETURN
+    END
+END
+GO
+
+
+-- 60. Hệ thống có 4 nhóm quyền: BANHANG, KIEMKHO, QUANLY, GIAMDOC. Hãy 
+-- phân quyền cho từng nhóm này theo mô tả ở Phần II. 
+
+
+
+-- NHÓM BÁN HÀNG
+GRANT SELECT,INSERT ON HOADON TO BANHANG;
+GRANT SELECT,INSERT ON CHITIET_HOADON TO BANHANG
+GRANT SELECT,INSERT ON PHIEUPHUTHU TO BANHANG
+GRANT SELECT,INSERT ON PHIEUCHI TO BANHANG
+
+-- GRANT SELECT LOAITHUCUONG TO BANHANG
+-- GRANT SELECT THUCUONG TO BANHANG
+-- GRANT SELECT NGUYENLIEU TO BANHANG
+-- GRANT SELECT KHUVUC TO BANHANG
+-- GRANT SELECT CHINHANH TO BANHANG
+-- GRANT SELECT CONGTHUC TO BANHANG
+
+REVOKE ALL ON LOAITHUCUONG FROM BANHANG;
+REVOKE ALL ON THUCUONG FROM BANHANG;
+REVOKE ALL ON NGUYENLIEU FROM BANHANG;
+REVOKE ALL ON KHUVUC FROM BANHANG;
+REVOKE ALL ON CHINHANH FROM BANHANG;
+REVOKE ALL ON CONGTHUC FROM BANHANG;
+
+-- NHÓM KIỂM KHO
+GRANT SELECT, INSERT PHIEUNHAP TO KIEMKHO
+GRANT SELECT, INSERT CHITIET_PHIEUNHAP TO KIEMKHO
+GRANT SELECT, INSERT NGUYENLIEU TO KIEMKHO
+
+REVOKE ALL ON HOADON FROM KIEMKHO;
+REVOKE ALL ON CHITIET_HOADON FROM KIEMKHO;
+REVOKE ALL ON PHIEUPHUTHU FROM KIEMKHO;
+REVOKE ALL ON PHIEUCHI FROM KIEMKHO;
+
+-- NHÓM QUẢN LÝ
+GRANT SELECT, INSERT, UPDATE NHANVIEN TO QUANLY
+GRANT SELECT, INSERT, UPDATE BAOCAO TO QUANLY
+GRANT SELECT, INSERT, UPDATE CONGTHUC TO QUANLY
+GRANT SELECT, INSERT, UPDATE KHUVUC TO QUANLY
+GRANT SELECT, INSERT, UPDATE CHINHANH TO QUANLY
+GRANT SELECT, INSERT, UPDATE LOAITHUCUONG TO QUANLY
+GRANT SELECT, INSERT, UPDATE NHACUNGCAP TO QUANLY
+
+GRANT INSERT, SELECT HOADON TO QUANLY
+GRANT INSERT, SELECT CHITIET_HOADON TO QUANLY
+GRANT INSERT, SELECT PHIEUPHUTHU TO QUANLY
+GRANT INSERT, SELECT PHIEUNHAP TO QUANLY    
+GRANT INSERT, SELECT CHITIET_PHIEUNHAP TO QUANLY
+GRANT INSERT, SELECT PHIEUCHI TO QUANLY
+GRANT INSERT, SELECT THUCUONGO TO QUANLY
+
+GRANT SELECT CHUCVU TO QUANLY
+
+-- NHÓM GIÁM ĐỐC
+
+GRANT ALL PRIVILEGES ON DATABASE::db_Starbucks_Coffee TO GIAMDOC
