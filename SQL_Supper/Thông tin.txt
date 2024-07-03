@@ -1,0 +1,9 @@
+Mỗi giáo viên gồm có các thông tin về mã giáo viên, họ tên, địa chỉ, số điện thoại, ngày sinh,lương, phái và thuộc về một bộ môn cụ thể. Mỗi giáo viên có thể có nhiều số điện thoại và địa chỉ gồm các thông tin về số nhà, đường, quận, thành phố.
+
+Mỗi bộ môn gồm có các thông tin về mã bộ môn, tên bộ môn, phòng bộ môn, điện thoại và do một giáo viên làm trưởng bộ môn, ngày nhận chức trưởng bộ môn của giáo viên đó.
+
+Mỗi khoa cần lưu trữ thông tin về mã khoa, tên khoa, năm thành lập, phòng làm việc, số điện thoại, khoa do một giáo viên làm trưởng khoa và ngày nhận chức trưởng khoa của giáo viên đó. Một khoa có thể có nhiều bộ môn, nhưng một bộ môn chỉ thuộc về một khoa nào đó mà thôi.
+
+Mỗi đề tài có có các thông tin mã đề tài, tên đề tài, cấp quản lý, kinh phí, ngày bắt đầu, ngày kết thúc và thuộc về một chủ đề cụ thể. Mỗi chủ đề gồm có mã chủ đề, tên chủ đề. Mỗi đề tài có thể chia làm nhiều công việc.
+
+Mỗi công việc gồm có số thứ tự, tên công việc, ngày bắt đầu, ngày kết thúc. Mỗi giảng viên có thể tham gia vào nhiều công việc cụ thể của các đề tài và mỗi công việc cũng có thể cho phép nhiều giáo viên tham gia. Khi giáo viên tham gia vào công việc thì có ghi nhận lại kết quả thực hiện công việc cũng như phụ cấp cho giáo viên.

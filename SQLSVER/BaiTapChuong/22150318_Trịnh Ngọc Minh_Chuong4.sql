@@ -1751,7 +1751,6 @@ GO
 --  viên mới trong bảng SinhVien thì sinh viên đó
 --  phải có mã lớp trong bảng Lop
 
-
 ALTER TABLE lop 
 ADD siso INT
 

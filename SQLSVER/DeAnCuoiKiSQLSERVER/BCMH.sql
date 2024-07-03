@@ -237,7 +237,7 @@ INSERT INTO phieuphuthu VALUES('MAPT63','8002','Khách làm vỡ ly','2024-11-20
 -- Từ câu này chưa chạy
 
 UPDATE phieuphuthu
-SET MANV = '8002', NGAYLAP = '2024-14-02'
+SET MANV = '8002', NGAYLAP = '2024-02-14'
 
 
 -- 10. Viết câu lệnh sửa TENPPT của nhân viên có mã NV3 trong ngày 30/01/2024 thành 
@@ -250,11 +250,12 @@ WHERE MANV = '8003' AND NGAYLAP = '2024-01-30'
 
 -- 11. Tăng hệ số giá thêm 1 cho khu vực có nhiều người uống nhất.
 
-SELECT khuvuc.MAKV, COUNT(hoadon.MAHD)
+SELECT khuvuc.MAKV, COUNT(hoadon.MAHD) AS SoluongHoaDon
 FROM khuvuc 
 JOIN hoadon 
 on khuvuc.MAKV = hoadon.MAKV
-GROUP BY  khuvuc.MAKV
+GROUP BY khuvuc.MAKV
+ORDER BY COUNT(hoadon.MAHD) DESC
 
 UPDATE khuvuc 
 SET HESOGIA = HESOGIA + 1
@@ -270,20 +271,20 @@ WHERE MAKV = (
 
 SELECT T.MATU
 FROM thucuong as T
-JOIN chitiet_hoadon as C
+LEFT JOIN chitiet_hoadon as C
 ON T.MATU = c.MATU
-JOIN hoadon as H
+LEFT JOIN hoadon as H
 ON C.MAHD = H.MAHD
 WHERE YEAR(H.NGAYLAP) = 2024 AND MONTH(H.NGAYLAP) = 1 
 
 UPDATE thucuong
-SET DONGIA = DONGIA * 0.2
-WHERE MATU = (
+SET DONGIA = DONGIA * 0.8
+WHERE MATU IN (
     SELECT TOP 1 C.MATU
     FROM chitiet_hoadon AS C
-    JOIN hoadon AS H
+    LEFT JOIN hoadon AS H
     ON C.MAHD = H.MAHD
-    WHERE YEAR(H.NGAYLAP) = 2024 AND MONTH(H.NGAYLAP) = 1 AND C.SOLUONG = 0
+    WHERE YEAR(H.NGAYLAP) = 2024 AND MONTH(H.NGAYLAP) = 1
     GROUP BY C.MATU 
     ORDER BY COUNT(*) ASC
 )
@@ -303,7 +304,7 @@ WHERE MATU = (
 
 --14. Viết câu lệnh xóa báo cáo của một nhân viên với MANV=NV5 vào  ngày 31/01/2024.
 DELETE FROM baocao 
-WHERE MANV = '8005' AND NGAYLAP = '2024-1-31'
+WHERE MANV = '8005' AND NGAYLAP = '2024-01-31'
 
 
 -- 15. Viết câu lệnh xóa phiếu phụ thu của nhân viên có mã là NV3 đã lập vào ngày 21/09/2023. 
@@ -374,7 +375,7 @@ ORDER BY COUNT(*) DESC
 
 -- 23. Viết câu lệnh tìm khu vực khách hàng chọn nhiều nhất.
 
-SELECT khuvuc.MAKV,COUNT(hoadon.MAHD) AS SOLUONGMUA
+SELECT TOP 1 khuvuc.MAKV,COUNT(hoadon.MAHD) AS SOLUONGMUA
 FROM khuvuc 
 JOIN hoadon
 ON khuvuc.MAKV = hoadon.MAKV
@@ -440,20 +441,12 @@ WHERE
 
 -- 29. Tính lợi nhuận theo từng chi nhánh.
 
-SELECT 
-    SUM(hoadon.TONGTIEN) + SUM(phieuphuthu.SOTIEN) AS TongDoanhThu,
-    SUM(phieuchi.TONGTIEN) AS TongChiPhi,
-    (SUM(hoadon.TONGTIEN) + SUM(phieuphuthu.SOTIEN)) - SUM(phieuchi.TONGTIEN) AS LoiNhuan,khuvuc.MAKV
-FROM 
-    khuvuc
-LEFT JOIN 
-    hoadon ON khuvuc.MAKV = hoadon.MAKV
-LEFT JOIN 
-    nhanvien ON hoadon.MANV = nhanvien.MANV
-LEFT JOIN 
-    phieuphuthu ON nhanvien.MANV = phieuphuthu.MANV
-LEFT JOIN 
-    phieuchi ON nhanvien.MANV = phieuchi.MANV
+SELECT (SUM(hoadon.TONGTIEN) + SUM(phieuphuthu.SOTIEN)) - SUM(phieuchi.TONGTIEN) AS LoiNhuan,khuvuc.MAKV
+FROM khuvuc
+LEFT JOIN hoadon ON khuvuc.MAKV = hoadon.MAKV
+LEFT JOIN nhanvien ON hoadon.MANV = nhanvien.MANV
+LEFT JOIN phieuphuthu ON nhanvien.MANV = phieuphuthu.MANV
+LEFT JOIN phieuchi ON nhanvien.MANV = phieuchi.MANV
 GROUP BY khuvuc.MAKV 
 
 
@@ -506,7 +499,8 @@ ORDER BY SOLUONG DESC
 -- (01/01/2020) và ràng buộc tồn tại các mã chức vụ, mã chi nhánh. 
 GO
 
-CREATE PROCEDURE sp_themNhanVien(@manv char(5),@tennv nvarchar(50),@macv char(5),@macn char(5),@gioitinh bit ,@ngayvao date,@ngaynghi date = null)
+CREATE PROCEDURE sp_themNhanVien(@manv char(5),@tennv nvarchar(50),@macv char(5),@macn char(5),
+@gioitinh bit ,@ngayvao date,@ngaynghi date = null)
 AS
 BEGIN
     IF NOT EXISTS(
@@ -533,16 +527,18 @@ BEGIN
     BEGIN
         PRINT N'Ngày vào phải lớn hơn ngày lập hệ thống (01/01/2020)'
         RETURN
-    END
+	END
 
-    INSERT INTO nhanvien VALUES(@manv,@tennv,@macv,@macn,@gioitinh,@ngayvao,@ngaynghi)
+    INSERT INTO nhanvien (MANV,TENNV,MACV,MACN,GIOITINH,NGAYVAO,NGAYNGHI) 
+	VALUES(@manv,@tennv,@macv,@macn,@gioitinh,@ngayvao,@ngaynghi)
     PRINT N'Thêm nhân viên thành công'
 
 END
-
 GO 
 
+EXEC sp_themNhanVien'8301',N'Trịnh Ngọc Minh','V14','N1','0','2024-01-01','2024-04-01'
 
+GO	
 -- 33. Viết thủ tục thêm một thức uống vào bảng THUCUONG với tham số truyền vào là 
 -- mã thức uống, mã loại thức uống, tên thức uống, đơn giá. Kiểm tra tham số vào 
 -- (kiểm tra tồn tại mã loại thức uống). 
@@ -551,7 +547,6 @@ GO
 CREATE PROCEDURE sp_themThucUong(@matu char(5),@maloai char(5),@tentu nvarchar(50),@dongia DECIMAL)
 AS
 BEGIN
-
     IF NOT EXISTS(
         SELECT *
         FROM loaithucuong
@@ -568,6 +563,10 @@ BEGIN
 END
 GO
 
+EXEC sp_themThucUong 'STOC','SITO','Sinh tố cam',35000
+
+GO
+
 -- 34. Viết thủ tục thêm mới một loại thức uống mới vào bảng LOAITHUCUONG với 
 -- tham số truyền vào là mã loại, tên loại thức uống.  
 
@@ -578,7 +577,8 @@ BEGIN
     PRINT N'Thêm thành công'
 END
 GO
-
+EXEC sp_themLoaiThuUong 'VEOS','Viennois'
+GO
 
 -- 35.  Viết thủ tục thêm mới một nguyên vào bảng NGUYENLIEU với tham số đầu vào 
 -- là mã nguyên liệu, tên nguyên liệu, số lượng, đơn vị.   
@@ -591,7 +591,8 @@ BEGIN
     PRINT N'Thêm thành công'
 END
 GO
-
+EXEC sp_themNguyenLieu 'XIMU',N'Xí muội',50,N'Hộp'
+GO
 -- 36. Viết thủ tục để cập nhật thông tin của một thức uống trong bảng THUCUONG với 
 -- tham số đầu vào là mã thức uống, mã loại thức uống, tên thức uống, đơn giá. Kiểm 
 -- tra ràng buộc tồn tại thức uống và mã loại thức uống. 
@@ -610,11 +611,14 @@ BEGIN
     END
 
     UPDATE thucuong
-    SET MATU = @matu,MALOAI = @maltu, TENTU = @tentu,DONGIA = @dongia
-    
+    SET MALOAI = @maltu, TENTU = @tentu,DONGIA = @dongia
+    WHERE MATU = @matu
+
     PRINT N'Sửa thành công'
 END
 GO
+EXEC sp_capNhatThucUong 'CLCF','CHLA',N'Chocolate Cam',40000
+GO	
 
 -- 37. Viết thủ tục liệt kê các thức uống thuộc một loại thức uống bất kì, với tham số truyền 
 -- vào là tên loại. Kiểm tra ràng buộc tồn tại tên loại.  
@@ -641,8 +645,8 @@ BEGIN
 
 END
 GO
-
-
+EXEC sp_lietkeThucUong N'Cà Phê'
+GO
 -- 38. Viết thủ tục liệt kê thông tin tất cả các nguyên liệu (tên nguyên liệu, số lượng tồn 
 -- kho, đơn vị) của một thức uống bất kì, với tham số truyền vào là tên thức uống. Kiểm 
 -- tra ràng buộc tồn tại tên thức uống.
@@ -662,17 +666,18 @@ BEGIN
 
     SELECT NL.TENNL,NL.SOLUONG ,NL.DONVI
     FROM nguyenlieu AS NL
-    JOIN congthuc AS CT
+    LEFT JOIN congthuc AS CT
     ON NL.MANL = CT.MANL
-    JOIN thucuong AS TU
+    LEFT JOIN thucuong AS TU
     ON CT.MATU = TU.MATU
-    JOIN chitiet_hoadon AS CTHD
+    LEFT JOIN chitiet_hoadon AS CTHD
     ON CTHD.MATU = TU.MATU
     WHERE TU.TENTU = @tentu
 
 END
 GO
-
+EXEC sp_lietKeNguyenLieu N'Trà dâu'
+GO
 
 -- 39. Viết thủ tục dùng để tìm những thức uống không bán được của chi nhánh bất kì trong 
 -- khoảng thời gian nào đó. Với tham số đầu vào là tên chi nhánh, thời gian bắt đầu và 
@@ -682,8 +687,7 @@ GO
 CREATE PROCEDURE sp_timThucUong(@tenchinhanh nvarchar(25),@tgbatdau date, @tgketthuc date)
 AS
 BEGIN
-
-    SELECT TU.*
+    SELECT TU.MATU,TU.MALOAI
     FROM thucuong AS TU
     LEFT JOIN chitiet_hoadon AS CTHD
     ON TU.MATU = CTHD.MATU
@@ -693,14 +697,15 @@ BEGIN
     ON HD.MANV = NV.MANV
     LEFT JOIN chinhanh AS CN
     ON NV.MACN = CN.MACN
-    WHERE CN.TENCN = @tenchinhanh AND HD.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc AND CTHD.MAHD IS NULL
-
+    WHERE CN.TENCN = @tenchinhanh AND HD.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc OR HD.MAHD IS NULL
 END
+GO
+EXEC sp_timThucUong N'433 Lê Đức Thọ','2022-01-01','2023-11-30'
 GO
 
 -- 40. Viết thủ tục liệt kê tên các nguyên liệu của một nhà cung cấp bất kì, với tham số đầu 
 -- vào là tên nhà cung cấp, kiểm tra ràng buộc tồn tại tên nhà cung cấp. 
-
+-- Chưa Chạy
 CREATE PROCEDURE sp_lietKeNhaCungCap(@tennhacc nvarchar(50))
 AS
 BEGIN
@@ -714,7 +719,6 @@ BEGIN
         PRINT N'Tên nhà cung cấp không tồn tại'
         RETURN
     END
-
     SELECT NL.*
     FROM nguyenlieu AS NL
     JOIN chitiet_phieunhap AS CTPN
@@ -724,10 +728,10 @@ BEGIN
     JOIN nhacungcap AS NCC
     ON NCC.MANCC = PN.MANCC
     WHERE NCC.TENNCC = @tennhacc
-
 END
 GO
-
+EXEC sp_lietKeNhaCungCap 'WorldMarket'
+GO
 -- 41. Viết thủ tục tăng giá của một thức uống bất kì với tham số truyền vào là tên thức 
 -- uống và hệ số giá. Điều kiện tên thức uống tồn tại và hệ số tăng giá phải nhỏ hơn 1 
 -- đồng thời không nhỏ hơn -0.5. 
@@ -758,7 +762,8 @@ BEGIN
 
 END
 GO
-
+EXEC sp_tangGiaThucUong 'Americano',0.5
+GO
 
 -- 42. Viết thủ tục tính tổng tiền phụ thu của một chi nhánh bất kì trong thời gian bất kì. 
 -- Với tham số truyền vào là tên chi nhánh, thời gian bắt đầu và thời gian kết thúc. Điều 
@@ -776,15 +781,17 @@ BEGIN
 
     SELECT CN.TENCN , SUM(PT.SOTIEN) AS TONGTIEN
     FROM phieuphuthu AS PT
-    JOIN nhanvien AS NV
+    LEFT JOIN nhanvien AS NV
     ON PT.MANV = NV.MANV
-    JOIN chinhanh AS CN
+    LEFT JOIN chinhanh AS CN
     ON NV.MACN = CN.MACN
     WHERE CN.TENCN = @tenchinhanh AND PT.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc 
+	GROUP BY CN.TENCN
 
 END
 GO
-
+EXEC sp_tongTienPhuThu N'10 Mai Chí Thọ','2022-01-01','2024-12-30'
+GO
 
 -- 43. Viết thủ tục tính lợi nhuận của hệ thống trong khoảng thời gian bất kì. Với tham số 
 -- đầu vào là thời gian bắt đầu, thời gian kết thúc. Tham sô đầu ra là tổng lợi nhuận của 
@@ -809,6 +816,8 @@ BEGIN
     phieuchi.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc;
 
 END
+GO
+EXEC sp_loiNhuanHeThong '2022-01-01','2024-12-30' 
 GO
 
 -- 44. Viết thủ tục tìm thức uống bán chạy nhất của chi nhánh bất kì trong khoảng thời gian 
@@ -844,6 +853,8 @@ BEGIN
     END
 END
 GO
+EXEC sp_timThucUongChiNhanh N'10 Mai Chí Thọ','2022-01-01','2024-12-30'
+GO
 
 
 -- 45. Viết thủ tục tính tổng số tiền doanh thu của hệ thống trong một ngày bất kì với tham 
@@ -863,8 +874,8 @@ BEGIN
 
 END
 GO
-
-
+EXEC sp_doanhThuNgay '14'
+GO
 -- 46. Viết thủ tục tìm thức uống bán chạy nhất của hệ thống trong khoảng thời gian bất kì, 
 -- với tham số truyền vào là thời gian bắt đầu và thời gian kết thúc. Điều kiện thời gian 
 -- bắt đầu trước thời gian kết thúc. 
@@ -881,7 +892,7 @@ BEGIN
         ON TU.MATU = CTHD.MATU
         JOIN hoadon AS HD
         ON CTHD.MAHD = HD.MAHD
-        --WHERE HD.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc
+        WHERE HD.NGAYLAP BETWEEN @tgbatdau AND @tgketthuc
         GROUP BY TU.MATU,TU.TENTU
         ORDER BY COUNT(*) DESC
 
@@ -893,6 +904,8 @@ BEGIN
     END
 
 END
+GO
+EXEC sp_thucUongBanChay '2023-01-01','2024-12-30'
 GO
 
 
@@ -913,7 +926,8 @@ BEGIN
 
 END
 GO
-
+EXEC sp_lietKeNguyenLieu_phieuNhap'MAPN10'
+GO
 
 -- 48. Viết thủ tục tính tổng doanh thu của hệ thống trong khoảng thời gian bất kì. Với 
 -- tham số đầu vào là thời gian bắt đầu, thời gian kết thúc. Tham sô đầu ra là tổng 
@@ -923,7 +937,7 @@ CREATE PROCEDURE sp_tinhTongDoanhThu_HeThong(@tgbatdau date,@tgketthuc date)
 AS
 BEGIN
 
-    SELECT SUM(HD.TONGTIEN + PT.SOTIEN) AS TONGTIEN
+    SELECT SUM(HD.TONGTIEN + PT.SOTIEN) AS DOANHTHU
     FROM hoadon AS HD
     JOIN phieuphuthu AS PT
     ON HD.MANV = PT.MANV
@@ -932,8 +946,8 @@ BEGIN
 
 END
 GO
-
-
+EXEC sp_tinhTongDoanhThu_HeThong '2022-01-01','2024-12-30'
+GO
 
 -- 49. Viết thủ tục tính tổng chi tiêu của hệ thống trong khoảng thời gian bất kì. Với tham 
 -- số đầu vào là thời gian bắt đầu, thời gian kết thúc. Tham sô đầu ra là tổng tiền chi 
@@ -952,6 +966,8 @@ BEGIN
 
 END
 GO
+EXEC sp_tongChiTieu '2022-01-01','2024-12-30'
+GO
 
 
 -- 50. Viết một thủ tục với tùy chọn ‘with encryption’, mã hóa không cho người dùng xem 
@@ -965,50 +981,48 @@ BEGIN
     PRINT N'Mã hóa không cho người dùng xem được nội dung của thủ tục';
 END
 GO
-
+EXEC sp_maHoa_nguoiDung
+GO
 
 
 -- 51. Viết Trigger bắt lỗi cho lệnh Insert vào bảng CHITIET_HOADON. Khi thêm chi 
 -- tiết hóa đơn thì kiểm tra trùng mã, kiểm tra nhập số lượng âm, thông báo không đủ 
 -- nguyên liệu nếu hết và phải giảm số lượng tồn của nguyên liệu nếu thỏa các điều 
 -- kiện còn lại. 
--- ĐÃ CHẠY
 
 CREATE TRIGGER trg_themBangCHITIET_HOADON
 ON chitiet_hoadon
 FOR INSERT AS
 BEGIN
+  --  IF EXISTS(
+  --      SELECT *
+  --      FROM chitiet_hoadon,inserted
+		--WHERE inserted.MAHD = chitiet_hoadon.MAHD
+  --  )
+  --  BEGIN
+  --      PRINT N'Mã hóa đơn đã bị trùng'
+  --      ROLLBACK TRANSACTION
+  --  END
 
     IF EXISTS(
-        SELECT *
-        FROM inserted 
-        WHERE inserted.MAHD IN (
-            SELECT MAHD
-            FROM chitiet_hoadon
-        )
-    )
-    BEGIN
-        PRINT N'Mã hóa đã bị trùng'
-        ROLLBACK TRANSACTION
-        RETURN
-    END
-
-    IF EXISTS(
-        SELECT *
+        SELECT 1
         FROM inserted 
         WHERE SOLUONG < 0
     )
     BEGIN
         PRINT N'Số lượng không thể âm'
         ROLLBACK TRANSACTION
-        RETURN
     END
 
     UPDATE NL
     SET NL.SOLUONG = NL.SOLUONG - I.SOLUONG
     FROM nguyenlieu AS NL
+	JOIN congthuc AS CT
+	ON NL.MANL = CT.MANL
+	JOIN thucuong AS TU
+	ON TU.MATU = CT.MATU
     JOIN inserted AS I
-    ON NL.MANL = I.MATU
+    ON CT.MATU = I.MATU
     WHERE NL.SOLUONG >= I.SOLUONG
 
     IF EXISTS(
@@ -1021,12 +1035,14 @@ BEGIN
     BEGIN 
         PRINT N'Không đủ nguyên liệu'
         ROLLBACK TRANSACTION
-        RETURN
     END
 
 END
 GO
 
+INSERT INTO chitiet_hoadon VALUES('TTHD','HD48',9)
+
+GO
 -- 52. Viết Trigger bắt lỗi cho lệnh Update vào bảng CHITIET_HOADON. Khi sửa số 
 -- lượng thức uống trong chi tiết hóa đơn thì phải sửa số lượng tồn của nguyên liệu. 
 
@@ -1053,6 +1069,12 @@ BEGIN
     END
 
 END
+GO
+
+UPDATE chitiet_hoadon
+SET SOLUONG = SOLUONG - 1
+WHERE MATU = 'TTHD'
+
 GO
 
 -- 53. Viết Trigger bắt lỗi cho lệnh Delete vào bảng CHITIET_HOADON. Khi xóa chi tiết 
@@ -1086,17 +1108,19 @@ BEGIN
 
 END
 GO
+DELETE FROM chitiet_hoadon
+WHERE MAHD = 'HD49'
+GO
+
 
 -- 54. Viết Trigger bắt lỗi cho lệnh Insert vào bảng CHITIET_PHIEUNHAP. Khi thêm chi 
 -- tiết nhập thì kiểm tra trùng mã, bắt không được nhập số âm phải tăng số lượng tồn 
 -- của nguyên liệu (nhập hàng). 
 
-
 CREATE TRIGGER trg_them_CHITIET_PHIEUNHAP
 ON CHITIET_PHIEUNHAP 
 FOR INSERT AS
 BEGIN
-
     IF EXISTS(
         SELECT *
         FROM inserted,chitiet_phieunhap
@@ -1107,7 +1131,6 @@ BEGIN
         ROLLBACK TRANSACTION
         RETURN
     END
-
 
     IF EXISTS(
         SELECT *
@@ -1120,16 +1143,15 @@ BEGIN
         RETURN
     END
 
-
     UPDATE NL
     SET NL.SOLUONG = NL.SOLUONG + I.SOLUONG
     FROM nguyenlieu AS NL
     JOIN inserted AS I 
     ON NL.MANL = I.MANL
-
 END
 GO
-
+INSERT INTO chitiet_phieunhap VALUES('XIMU','MAPN6','50')
+GO
 -- 55. Viết Trigger bắt lỗi cho lệnh Update vào bảng CHITIET_PHIEUNHAP. Khi sửa số 
 -- lượng nguyên liệu trong chi tiết phiếu nhập thì: không được sửa số âm, phải sửa số 
 -- lượng tồn của nguyên liệu. 
@@ -1138,7 +1160,6 @@ CREATE TRIGGER trg_sua_CHITIET_PHIEUNHAP
 ON CHITIET_PHIEUNHAP 
 FOR UPDATE AS
 BEGIN
-
     IF EXISTS(
         SELECT *
         FROM inserted
@@ -1157,9 +1178,11 @@ BEGIN
     ON NL.MANL = I.MANL
     JOIN deleted AS D
     ON NL.MANL = D.MANL
-
-
 END
+GO
+UPDATE chitiet_phieunhap
+SET SOLUONG = SOLUONG - 20
+WHERE MANL = 'XIMU'
 GO
 
 
@@ -1170,36 +1193,35 @@ GO
 
 CREATE TRIGGER trg_xoa_CHITIET_PHIEUNHAP
 ON CHITIET_PHIEUNHAP 
-FOR UPDATE AS
+FOR DELETE AS
 BEGIN
 
-    UPDATE NL
-    SET NL.SOLUONG = NL.SOLUONG - D.SOLUONG
-    FROM nguyenlieu AS NL
-    JOIN deleted AS D
-    ON NL.MANL = D.MANL
+		UPDATE NL
+		SET NL.SOLUONG = NL.SOLUONG - D.SOLUONG
+		FROM nguyenlieu AS NL
+		JOIN deleted AS D
+		ON NL.MANL = D.MANL
 
-    IF NOT EXISTS(
-        SELECT *
-        FROM chitiet_phieunhap 
-        WHERE MAPN IN (
-            SELECT MAPN
-            FROM deleted
-        )
-    )
-    BEGIN
-        DELETE FROM phieunhap WHERE MAPN IN(
-            SELECT MAPN
-            FROM deleted
-        )
-        PRINT N'Xóa thành công'
-    END
-
-
+		IF NOT EXISTS(
+			SELECT *
+			FROM chitiet_phieunhap 
+			WHERE MAPN IN (
+				SELECT MAPN
+				FROM deleted
+			)
+		)
+		BEGIN
+			DELETE FROM phieunhap WHERE MAPN IN(
+				SELECT MAPN
+				FROM deleted
+			)
+			PRINT N'Xóa thành công'
+		END
 END
 GO
-
-
+DELETE FROM chitiet_phieunhap
+WHERE MANL = 'XIMU'
+GO
 
 -- 57. Viết Trigger cho lệnh Delete của bảng NHANVIEN. Khi xóa nhân viên thì tự động 
 -- xóa các bảng có liên quan ( chỉ xóa nhân viên đã nghĩ hơn 12 tháng).
@@ -1210,35 +1232,35 @@ FOR DELETE AS
 BEGIN
 
     -- Xóa những báo cáo của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM BAOCAO WHERE MANV IN (
+		DELETE FROM BAOCAO WHERE MANV IN (
         SELECT MANV 
         FROM deleted 
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
 
     -- Xóa những phiếu phụ thu của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM PHIEUPHUTHU WHERE MANV IN (
+		DELETE FROM PHIEUPHUTHU WHERE MANV IN (
         SELECT MANV 
         FROM deleted
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
 
     -- Xóa những phiếu chi của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM PHIEUCHI WHERE MANV IN (
+		DELETE FROM PHIEUCHI WHERE MANV IN (
         SELECT MANV 
         FROM deleted 
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
 
     -- Xóa những hóa đơn của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM HOADON WHERE MANV IN (
+		DELETE FROM HOADON WHERE MANV IN (
         SELECT MANV 
         FROM deleted 
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
 
     -- Xóa những chi tiết hóa đơn của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM CHITIET_HOADON WHERE MAHD IN (
+		DELETE FROM CHITIET_HOADON WHERE MAHD IN (
         SELECT MAHD 
         FROM HOADON 
         WHERE MANV IN (
@@ -1249,7 +1271,7 @@ BEGIN
     )
 
     -- Xóa những chi tiết phiếu nhập của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM CHITIET_PHIEUNHAP WHERE MAPN IN (
+		DELETE FROM CHITIET_PHIEUNHAP WHERE MAPN IN (
         SELECT MAPN 
         FROM PHIEUNHAP 
         WHERE MANV IN (
@@ -1260,14 +1282,14 @@ BEGIN
     )
 
     -- Xóa những phiếu nhập của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM PHIEUNHAP WHERE MANV IN (
+		DELETE FROM PHIEUNHAP WHERE MANV IN (
         SELECT MANV 
         FROM deleted 
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
 
     -- Xóa những chi nhánh của nhân viên đã nghỉ hơn 12 tháng
-    DELETE FROM CHINHANH WHERE MACN IN (
+		DELETE FROM CHINHANH WHERE MACN IN (
         SELECT MACN 
         FROM NHANVIEN 
         WHERE MANV IN (
@@ -1278,15 +1300,14 @@ BEGIN
     )
 
     -- Xóa những bản ghi của nhân viên đã nghỉ hơn 12 tháng trong bảng NHANVIEN
-    DELETE FROM NHANVIEN WHERE MANV IN (
+		DELETE FROM NHANVIEN WHERE MANV IN (
         SELECT MANV 
         FROM deleted 
         WHERE DATEDIFF(month, NGAYNGHI, GETDATE()) > 12
     )
-
-
 END
 GO
+
 
 
 -- 58. Viết Trigger bắt lỗi tuổi nhân viên khi Insert và khi Update bảng NHANVIEN. Điều 
@@ -1296,7 +1317,6 @@ CREATE TRIGGER trg_them_NhanVien_tren18
 ON nhanvien 
 FOR INSERT,UPDATE AS
 BEGIN
-
     IF EXISTS(
         SELECT *
         FROM inserted
@@ -1307,9 +1327,10 @@ BEGIN
         ROLLBACK TRANSACTION
         RETURN
     END
-
-
 END
+GO
+INSERT INTO nhanvien VALUES('8305','Khổng Hữu Trang','V14','N18','2007-10-22','1','0944523610',
+'KhongHuuTrang2002@gmail.com','Cần Thơ','2021-10-27','2022-03-13')
 GO
 
 
@@ -1508,12 +1529,14 @@ BEGIN
     END
 END
 GO
-
+INSERT INTO thucuong VALUES('AMET','CAFE','Cà phê trộn','-23022')
+GO
 
 -- 60. Hệ thống có 4 nhóm quyền: BANHANG, KIEMKHO, QUANLY, GIAMDOC. Hãy 
 -- phân quyền cho từng nhóm này theo mô tả ở Phần II. 
 
-
+CREATE LOGIN NHANVIEN WITH PASSWORD = '123'
+CREATE USER BANHANG FOR LOGIN NHANVIEN
 
 -- NHÓM BÁN HÀNG
 GRANT SELECT,INSERT ON HOADON TO BANHANG;
@@ -1521,49 +1544,52 @@ GRANT SELECT,INSERT ON CHITIET_HOADON TO BANHANG
 GRANT SELECT,INSERT ON PHIEUPHUTHU TO BANHANG
 GRANT SELECT,INSERT ON PHIEUCHI TO BANHANG
 
--- GRANT SELECT LOAITHUCUONG TO BANHANG
--- GRANT SELECT THUCUONG TO BANHANG
--- GRANT SELECT NGUYENLIEU TO BANHANG
--- GRANT SELECT KHUVUC TO BANHANG
--- GRANT SELECT CHINHANH TO BANHANG
--- GRANT SELECT CONGTHUC TO BANHANG
-
-REVOKE ALL ON LOAITHUCUONG FROM BANHANG;
-REVOKE ALL ON THUCUONG FROM BANHANG;
-REVOKE ALL ON NGUYENLIEU FROM BANHANG;
-REVOKE ALL ON KHUVUC FROM BANHANG;
-REVOKE ALL ON CHINHANH FROM BANHANG;
-REVOKE ALL ON CONGTHUC FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON LOAITHUCUONG FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON THUCUONG FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON NGUYENLIEU FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON KHUVUC FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON CHINHANH FROM BANHANG;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON CONGTHUC FROM BANHANG;
 
 -- NHÓM KIỂM KHO
-GRANT SELECT, INSERT PHIEUNHAP TO KIEMKHO
-GRANT SELECT, INSERT CHITIET_PHIEUNHAP TO KIEMKHO
-GRANT SELECT, INSERT NGUYENLIEU TO KIEMKHO
+CREATE LOGIN KIEMKHO WITH PASSWORD = '123'
+CREATE USER KIEMKHO FOR LOGIN KIEMKHO
 
-REVOKE ALL ON HOADON FROM KIEMKHO;
-REVOKE ALL ON CHITIET_HOADON FROM KIEMKHO;
-REVOKE ALL ON PHIEUPHUTHU FROM KIEMKHO;
-REVOKE ALL ON PHIEUCHI FROM KIEMKHO;
+GRANT SELECT, INSERT ON PHIEUNHAP TO KIEMKHO
+GRANT SELECT, INSERT ON CHITIET_PHIEUNHAP TO KIEMKHO
+GRANT SELECT, INSERT ON NGUYENLIEU TO KIEMKHO
+
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON HOADON FROM KIEMKHO;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON CHITIET_HOADON FROM KIEMKHO;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON PHIEUPHUTHU FROM KIEMKHO;
+REVOKE SELECT, INSERT, UPDATE,DELETE,REFERENCES ON PHIEUCHI FROM KIEMKHO;
+
 
 -- NHÓM QUẢN LÝ
-GRANT SELECT, INSERT, UPDATE NHANVIEN TO QUANLY
-GRANT SELECT, INSERT, UPDATE BAOCAO TO QUANLY
-GRANT SELECT, INSERT, UPDATE CONGTHUC TO QUANLY
-GRANT SELECT, INSERT, UPDATE KHUVUC TO QUANLY
-GRANT SELECT, INSERT, UPDATE CHINHANH TO QUANLY
-GRANT SELECT, INSERT, UPDATE LOAITHUCUONG TO QUANLY
-GRANT SELECT, INSERT, UPDATE NHACUNGCAP TO QUANLY
+CREATE LOGIN QUANLY WITH PASSWORD = '123'
+CREATE USER QUANLY FOR LOGIN QUANLY
 
-GRANT INSERT, SELECT HOADON TO QUANLY
-GRANT INSERT, SELECT CHITIET_HOADON TO QUANLY
-GRANT INSERT, SELECT PHIEUPHUTHU TO QUANLY
-GRANT INSERT, SELECT PHIEUNHAP TO QUANLY    
-GRANT INSERT, SELECT CHITIET_PHIEUNHAP TO QUANLY
-GRANT INSERT, SELECT PHIEUCHI TO QUANLY
-GRANT INSERT, SELECT THUCUONGO TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON NHANVIEN TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON BAOCAO TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON CONGTHUC TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON KHUVUC TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON CHINHANH TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON LOAITHUCUONG TO QUANLY
+GRANT SELECT, INSERT, UPDATE ON NHACUNGCAP TO QUANLY
 
-GRANT SELECT CHUCVU TO QUANLY
+GRANT INSERT, SELECT ON HOADON TO QUANLY
+GRANT INSERT, SELECT ON CHITIET_HOADON TO QUANLY
+GRANT INSERT, SELECT ON PHIEUPHUTHU TO QUANLY
+GRANT INSERT, SELECT ON PHIEUNHAP TO QUANLY    
+GRANT INSERT, SELECT ON CHITIET_PHIEUNHAP TO QUANLY
+GRANT INSERT, SELECT ON PHIEUCHI TO QUANLY
+GRANT INSERT, SELECT ON THUCUONG TO QUANLY
+
+GRANT SELECT ON CHUCVU TO QUANLY
+
 
 -- NHÓM GIÁM ĐỐC
+CREATE LOGIN GIAMDOC WITH PASSWORD = '123'
+CREATE USER GIAMDOC FOR LOGIN GIAMDOC
 
-GRANT ALL PRIVILEGES ON DATABASE::db_Starbucks_Coffee TO GIAMDOC
+GRANT CONTROL TO GIAMDOC;

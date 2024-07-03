@@ -71,7 +71,6 @@ SELECT masv, hodem, ten, malop,
 
 
  -- 4
-
  SELECT masv, hodem,ten,L.malop
  FROM sinhvien AS SV
  JOIN lop AS L
@@ -91,7 +90,7 @@ SELECT masv, hodem, ten, malop,
 
 
 
--- Dạng 4: ALL, ANY, EXISTS
+--                                                                                          Dạng 4: ALL, ANY, EXISTS
 
 --  1. Cho biết sinh viên có điểm cao nhất.
 
